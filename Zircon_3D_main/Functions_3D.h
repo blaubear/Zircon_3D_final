@@ -330,6 +330,175 @@ void k_refresh_3D(ALL_PARAMS_TYPES) {
 }
 
 __global__
+void S_refresh_3D(ALL_PARAMS_TYPES) {
+
+    int i_k = blockIdx.x * blockDim.x + threadIdx.x;
+
+    //bot
+    summ[0] = 0;
+    for (int N_count_in = 0; N_count_in < k_right_arr[i_k] - k_left_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_forth_arr[i_k] - k_back_arr[i_k]; N_count_in_in++) {
+            summ[0] = summ[0] + d_C[NX * NY * (k_back_arr[i_k] + N_count_in_in) + NX * (k_bot_arr[i_k] - 1) + k_left_arr[i_k] + N_count_in];
+        }
+    }
+
+    summ[1] = 0;
+    for (int N_count_in = 0; N_count_in < k_right_arr[i_k] - k_left_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_forth_arr[i_k] - k_back_arr[i_k]; N_count_in_in++) {
+            summ[1] = summ[1] + d_C[NX * NY * (k_back_arr[i_k] + N_count_in_in) + NX * (k_bot_arr[i_k]) + k_left_arr[i_k] + N_count_in];
+        }
+    }
+
+    dCpoDx_bot[i_k] = -(summ[0] - summ[1]) / ((k_right_arr[i_k] - k_left_arr[i_k]) * (k_forth_arr[i_k] - k_back_arr[i_k]) * dx);
+
+    V_bot[i_k] = -D_nd * dCpoDx_bot[i_k] / (C_sat - C_cryst);
+    if (FLAG_V_limit) {
+        if (V_bot[i_k] < -a * pow((D_nd / dt / 3), (0.5)) || V_bot[i_k] > 0) {
+            V_bot[i_k] = -a * pow((D_nd / dt / 3), (0.5));
+            dCpoDx_bot[i_k] = -V_bot[i_k] * (C_sat - C_cryst) / D_nd;
+            FLAGGG_counter[0] = FLAGGG_counter[0] + 1;
+        }
+    }
+
+    //top
+    summ[0] = 0;
+    for (int N_count_in = 0; N_count_in < k_right_arr[i_k] - k_left_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_forth_arr[i_k] - k_back_arr[i_k]; N_count_in_in++) {
+            summ[0] = summ[0] + d_C[NX * NY * (k_back_arr[i_k] + N_count_in_in) + NX * (k_top_arr[i_k] - 1) + k_left_arr[i_k] + N_count_in];
+        }
+    }
+
+    summ[1] = 0;
+    for (int N_count_in = 0; N_count_in < k_right_arr[i_k] - k_left_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_forth_arr[i_k] - k_back_arr[i_k]; N_count_in_in++) {
+            summ[1] = summ[1] + d_C[NX * NY * (k_back_arr[i_k] + N_count_in_in) + NX * (k_top_arr[i_k]) + k_left_arr[i_k] + N_count_in];
+        }
+    }
+
+    dCpoDx_top[i_k] = -(summ[0] - summ[1]) / ((k_right_arr[i_k] - k_left_arr[i_k]) * (k_forth_arr[i_k] - k_back_arr[i_k]) * dx);
+
+    V_top[i_k] = -D_nd * dCpoDx_top[i_k] / (C_sat - C_cryst);
+    if (FLAG_V_limit) {
+        if (V_top[i_k] > a * pow((D_nd / dt / 3), (0.5)) || V_top[i_k] < 0) {
+            V_top[i_k] = a * pow((D_nd / dt / 3), (0.5));
+            dCpoDx_top[i_k] = -V_top[i_k] * (C_sat - C_cryst) / D_nd;
+            FLAGGG_counter[0] = FLAGGG_counter[0] + 1;
+        }
+    }
+
+    //left
+    summ[0] = 0;
+    for (int N_count_in = 0; N_count_in < k_top_arr[i_k] - k_bot_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_forth_arr[i_k] - k_back_arr[i_k]; N_count_in_in++) {
+            summ[0] = summ[0] + d_C[NX * NY * (k_back_arr[i_k] + N_count_in_in) + NX * (k_bot_arr[i_k] + N_count_in) + k_left_arr[i_k] - 1];
+        }
+    }
+
+    summ[1] = 0;
+    for (int N_count_in = 0; N_count_in < k_top_arr[i_k] - k_bot_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_forth_arr[i_k] - k_back_arr[i_k]; N_count_in_in++) {
+            summ[1] = summ[1] + d_C[NX * NY * (k_back_arr[i_k] + N_count_in_in) + NX * (k_bot_arr[i_k] + N_count_in) + k_left_arr[i_k]];
+        }
+    }
+
+    dCpoDx_left[i_k] = -(summ[0] - summ[1]) / ((k_top_arr[i_k] - k_bot_arr[i_k]) * (k_forth_arr[i_k] - k_back_arr[i_k]) * dx);
+
+    V_left[i_k] = -D_nd * dCpoDx_left[i_k] / (C_sat - C_cryst);
+    if (FLAG_V_limit) {
+        if (V_left[i_k] < -a * pow((D_nd / dt / 3), (0.5)) || V_left[i_k] > 0) {
+            V_left[i_k] = -a * pow((D_nd / dt / 3), (0.5));
+            dCpoDx_left[i_k] = -V_left[i_k] * (C_sat - C_cryst) / D_nd;
+            FLAGGG_counter[0] = FLAGGG_counter[0] + 1;
+        }
+    }
+
+    //right
+    summ[0] = 0;
+    for (int N_count_in = 0; N_count_in < k_top_arr[i_k] - k_bot_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_forth_arr[i_k] - k_back_arr[i_k]; N_count_in_in++) {
+            summ[0] = summ[0] + d_C[NX * NY * (k_back_arr[i_k] + N_count_in_in) + NX * (k_bot_arr[i_k] + N_count_in) + k_right_arr[i_k] - 1];
+        }
+    }
+
+    summ[1] = 0;
+    for (int N_count_in = 0; N_count_in < k_top_arr[i_k] - k_bot_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_forth_arr[i_k] - k_back_arr[i_k]; N_count_in_in++) {
+            summ[1] = summ[1] + d_C[NX * NY * (k_back_arr[i_k] + N_count_in_in) + NX * (k_bot_arr[i_k] + N_count_in) + k_right_arr[i_k]];
+        }
+    }
+
+    dCpoDx_right[i_k] = -(summ[0] - summ[1]) / ((k_top_arr[i_k] - k_bot_arr[i_k]) * (k_forth_arr[i_k] - k_back_arr[i_k]) * dx);
+
+    V_right[i_k] = -D_nd * dCpoDx_right[i_k] / (C_sat - C_cryst);
+
+    if (FLAG_V_limit) {
+        if (V_right[i_k] > a * pow((D_nd / dt / 3), (0.5)) || V_right[i_k] < 0) {
+            V_right[i_k] = a * pow((D_nd / dt / 3), (0.5));
+            dCpoDx_right[i_k] = -V_right[i_k] * (C_sat - C_cryst) / D_nd;
+            FLAGGG_counter[0] = FLAGGG_counter[0] + 1;
+        }
+    }
+
+    //forth
+    summ[0] = 0;
+    for (int N_count_in = 0; N_count_in < k_top_arr[i_k] - k_bot_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_right_arr[i_k] - k_left_arr[i_k]; N_count_in_in++) {
+            summ[0] = summ[0] + d_C[NX * NY * (k_forth_arr[i_k] - 1) + NX * (k_bot_arr[i_k] + N_count_in) + k_left_arr[i_k] + N_count_in_in];
+        }
+    }
+
+    summ[1] = 0;
+    for (int N_count_in = 0; N_count_in < k_top_arr[i_k] - k_bot_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_right_arr[i_k] - k_left_arr[i_k]; N_count_in_in++) {
+            summ[1] = summ[1] + d_C[NX * NY * (k_forth_arr[i_k]) + NX * (k_bot_arr[i_k] + N_count_in) + k_left_arr[i_k] + N_count_in_in];
+        }
+    }
+
+    dCpoDx_forth[i_k] = -(summ[0] - summ[1]) / ((k_top_arr[i_k] - k_bot_arr[i_k]) * (k_right_arr[i_k] - k_left_arr[i_k]) * dx);
+
+    V_forth[i_k] = -D_nd * dCpoDx_forth[i_k] / (C_sat - C_cryst);
+
+    if (FLAG_V_limit) {
+        if (V_forth[i_k] > a * pow((D_nd / dt / 3), (0.5)) || V_forth[i_k] < 0) {
+            V_forth[i_k] = a * pow((D_nd / dt / 3), (0.5));
+            dCpoDx_forth[i_k] = -V_forth[i_k] * (C_sat - C_cryst) / D_nd;
+            FLAGGG_counter[0] = FLAGGG_counter[0] + 1;
+        }
+    }
+
+
+    //back
+    summ[0] = 0;
+    for (int N_count_in = 0; N_count_in < k_top_arr[i_k] - k_bot_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_right_arr[i_k] - k_left_arr[i_k]; N_count_in_in++) {
+            summ[0] = summ[0] + d_C[NX * NY * (k_back_arr[i_k] - 1) + NX * (k_bot_arr[i_k] + N_count_in) + k_left_arr[i_k] + N_count_in_in];
+        }
+    }
+
+    summ[1] = 0;
+    for (int N_count_in = 0; N_count_in < k_top_arr[i_k] - k_bot_arr[i_k]; N_count_in++) {
+        for (int N_count_in_in = 0; N_count_in_in < k_right_arr[i_k] - k_left_arr[i_k]; N_count_in_in++) {
+            summ[1] = summ[1] + d_C[NX * NY * (k_back_arr[i_k]) + NX * (k_bot_arr[i_k] + N_count_in) + k_left_arr[i_k] + N_count_in_in];
+        }
+    }
+
+    dCpoDx_back[i_k] = -(summ[0] - summ[1]) / ((k_top_arr[i_k] - k_bot_arr[i_k]) * (k_right_arr[i_k] - k_left_arr[i_k]) * dx);
+
+    V_back[i_k] = -D_nd * dCpoDx_back[i_k] / (C_sat - C_cryst);
+
+    if (FLAG_V_limit) {
+        if (V_back[i_k] < -a * pow((D_nd / dt / 3), (0.5)) || V_back[i_k] > 0) {
+            V_back[i_k] = -a * pow((D_nd / dt / 3), (0.5));
+            dCpoDx_back[i_k] = -V_back[i_k] * (C_sat - C_cryst) / D_nd;
+            FLAGGG_counter[0] = FLAGGG_counter[0] + 1;
+        }
+    }
+
+}
+
+
+
+__global__
 void S_bot_refresh_3D(ALL_PARAMS_TYPES) {
 
     int i_k = blockIdx.x * blockDim.x + threadIdx.x;
@@ -591,9 +760,7 @@ void distance_summer_3D(double* distance, int NX, int NY, int NZ, int N_cryst, d
     int i_k = blockIdx.x * blockDim.x + threadIdx.x;
     int j_k = blockIdx.y * blockDim.y + threadIdx.y;
 
-    //distance[i_k + j_k * NX] = 0;
     for (int N_count = 0; N_count <= N_cryst; N_count++) {
-        //distance[i_k + j_k * NX] = distance[i_k + j_k * NX] + fabs((i_k / (double)NX) - S_cent_x[N_count]) + fabs((j_k / (double)NY) - S_cent_y[N_count]);
         distance[i_k + j_k * NX] = fabs((i_k / (double)NX) - S_cent_x[N_count]) + fabs(j_k / (double)NY - S_cent_y[N_count]) + fabs(k / (double)NZ - S_cent_z[N_count]);
     }
 }
@@ -602,9 +769,7 @@ __global__
 void distance_summer_3D_optimized(double* distance, int NX, int NY, int NZ, int N_cryst, double* S_cent_x, double* S_cent_y, double* S_cent_z, double gap) {
     int i_k = blockIdx.x * blockDim.x + threadIdx.x;
 
-    //distance[i_k + j_k * NX] = 0;
     for (int N_count = 0; N_count <= N_cryst; N_count++) {
-        //distance[i_k + j_k * NX] = distance[i_k + j_k * NX] + fabs((i_k / (double)NX) - S_cent_x[N_count]) + fabs((j_k / (double)NY) - S_cent_y[N_count]);
         distance[i_k] = fabs((((i_k% NX))/ (double)NX) - S_cent_x[N_count]) + fabs(((i_k%(NX * NY))/NY) / (double)NY - S_cent_y[N_count]) + fabs((i_k / (NX * NY)) / (double)NZ - S_cent_z[N_count]);
     }
 }
@@ -626,7 +791,7 @@ __global__
 void distance_obnulator_3D_optimized(double* distance, double* d_C, int NX, int NY, int NZ, int N_cryst, double* S_cent_x, double* S_cent_y, double* S_cent_z, double gap, double max_val, double eps) {
     int i_k = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (d_C[i_k] < max_val - eps) {
+    if ((d_C[i_k] < max_val - eps)) {
         distance[i_k] = 0;
     }
 }

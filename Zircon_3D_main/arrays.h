@@ -6,7 +6,6 @@ const int NZ = NY;
 int size = NX * NX * NX;
 
 int N_cryst_max   = 2000;
-//int Nt = 1000;
 int Nt = 32 * NX * NX;
 
 double T_start = (double)800 + 273;     // начальная температура в кельвинах;
