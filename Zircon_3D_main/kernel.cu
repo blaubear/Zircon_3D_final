@@ -338,45 +338,8 @@ int main() {
 		max_val_x = 0;
 		max_val_y = 0;
 
-
-
-
 		//reduceMaxIdx_3D << <1, 1 >> > (d_C, NX * NY * NZ, d_max, d_max_index, gap);
-
 		//cudaMemcpy(&max_val, d_max, sizeof(double), cudaMemcpyDeviceToHost);
-#ifdef FIND_ERRORS
-		gpuErrchk(cudaPeekAtLastError());
-#endif
-		//cudaMemcpy(&max_val, d_max, sizeof(double), cudaMemcpyDeviceToHost);
-
-		//max_val = max_val_arr[0];
-
-		// 
-		// 
-		//reduceMaxIdx << <1, 1 >> > (d_C, NX * NY , d_max, d_max_index, gap);
-		//VecMax<< <test_1, test_2 >>> (d_C, d_C_test, NX * NY * NZ);
-
-
-		//printf(" Rhs[0] = %f \n", max_val);
-
-		/*
-		if (FLAG_all_graphs) {
-			graph_number = graph_number + 1;
-			cudaMemcpy(h_C_GPU_result, d_C, NX * NY * NZ * sizeof(double), cudaMemcpyDeviceToHost);
-			WriteInFile_3D(h_C_GPU_result, NX, NY, NZ, 100);
-		}
-
-		if (FLAG_all_graphs) {
-			graph_number = graph_number + 1;
-			cudaMemcpy(h_C_GPU_result, d_C_test, NX * NY * NZ * sizeof(double), cudaMemcpyDeviceToHost);
-			WriteInFile_3D(h_C_GPU_result, NX, NY, NZ, 101);
-		}
-
-		cudaMemcpy(&p_int, d_max_index, sizeof(int), cudaMemcpyDeviceToHost);
-		printf("d_max_index  = %d \n", p_int);
-
-		*/
-		/**/
 
 		Max_Sequential_Addressing_Shared_x_optimized << < size / 1024, 1024 >> > (d_C, data_out, size);
 		for (int i = 0; i < 2; i++) {
@@ -384,8 +347,6 @@ int main() {
 		}
 
 		cudaMemcpy(&max_val, &data_out[0], sizeof(double), cudaMemcpyDeviceToHost);
-
-
 
 
 #ifdef FIND_ERRORS
@@ -406,7 +367,6 @@ int main() {
 		printf("d_max = %f \n", max_val);
 #endif
 #endif
-
 
 		//создание нового кристалла
 #ifdef CREATION_OF_NEW_CRYSTALLS_3D
@@ -462,15 +422,8 @@ int main() {
 			max_val_y = (max_val_x - max_val_z * NX * NY) / NY;
 			max_val_x = (max_val_x - max_val_z * NX * NY) - max_val_y * NY;
 
-			//cudaMemcpy(&p, max_val_y_s, 1 * sizeof(double), cudaMemcpyDeviceToHost);
-
-
-			//cudaMemcpy(&p, max_val_y_s, 1 * sizeof(double), cudaMemcpyDeviceToHost);
-
-
 			n_img = n_img + 1;
 			N_cryst = N_cryst + 1;
-
 
 			max_val_x_s = (double)max_val_x;
 			max_val_y_s = (double)max_val_y;
@@ -514,7 +467,6 @@ int main() {
 
 #ifdef YAVNO_DIFFUSION
 
-
 		diff_x << < BLOCK_SIZE_test, THREADS_SIZE_test >> > (qx, d_C);
 		diff_y << < BLOCK_SIZE_test, THREADS_SIZE_test >> > (qy, d_C);
 		diff_z << < BLOCK_SIZE_test, THREADS_SIZE_test >> > (qz, d_C);
@@ -525,13 +477,15 @@ int main() {
 
 		Yavno_diffusion_3D << < BLOCK_SIZE_test, THREADS_SIZE_test >> > (d_C, d_C_old, D_nd, dx, dy, dz, Qx, Qy, Qz, dt);
 
-		bounday_cond_back_y_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
-		bounday_cond_up_z_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
-		bounday_cond_back_z_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
 
 		bounday_cond_up_x_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
 		bounday_cond_back_x_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
+
+		bounday_cond_back_y_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
 		bounday_cond_up_y_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
+
+		bounday_cond_up_z_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
+		bounday_cond_back_z_3D << < BLOCK_SIZE, THREADS_SIZE >> > (d_C);
 
 		S_refresh_3D << <1, N_cryst + 1 >> > (ALL_PARAMS);
 		Crystals_growth_3D << < 1, N_cryst + 1 >> > (S_top, S_bot, S_left, S_right, S_back, S_forth, V_top, V_bot, V_left, V_right, V_back, V_forth, dt);
